@@ -5,13 +5,13 @@ import sendMail from "../middlewares/sendMail.js";
 import TryCatch from "../middlewares/TryCatch.js";
 
 export const register = TryCatch(async(req,res) => {
-    const {email,name,password} = req.body
+    const {email,name,password} = req.body;
 
         let user = await User.findOne({email});
 
         if(user) 
             return res.status(400).json({
-        message: "User Already Exists",
+               message: "User Already Exists",
     });
 
     const hashPassword = await bcrypt.hash(password,10);
@@ -19,8 +19,8 @@ export const register = TryCatch(async(req,res) => {
     user = {
         name,
         email,
-        password: hashPassword
-    }
+        password: hashPassword,
+    };
 
     const otp = Math.floor(Math.random() *1000000);
 
@@ -33,7 +33,8 @@ export const register = TryCatch(async(req,res) => {
     });
 
     const data = {
-        name, otp
+        name,
+        otp,
     };
 
     await sendMail(
@@ -46,21 +47,22 @@ export const register = TryCatch(async(req,res) => {
         message: "Otp send to your mail" ,
         activationToken,
     });
-})
+});
 
-export const verifyUser = TryCatch(async(req,rest) =>{
-    const {otp, activationToken} = req.body
+export const verifyUser = TryCatch(async (req,res) =>{
+    const {otp, activationToken} = req.body;
 
-    const verify = jwt.verify(activationToken, process.env.Activation_Secret)
+    const verify = jwt.verify(activationToken, process.env.Activation_Secret);
 
     if (!verify)
         return res.status(400).json({
             message: "Otp Expired",
-    });
+        });
 
-    if (verify.otp !== otp)return res.status(400).json({
-        message: "Wrong Otp",
-    });
+    if (verify.otp !== otp)
+        return res.status(400).json({
+          message: "Wrong Otp",
+        });
 
     await User.create ({
         name: verify.user.name,
@@ -84,9 +86,9 @@ export const loginUser = TryCatch(async(req,res) => {
 
     if(!matchPassword)
         return res.status(400).json ({
-    message: "wrong password",
-});
-    const token = await jwt.sign({_id: user._id}, process.env.Jwt_Sec,{
+          message: "wrong password",
+        });
+    const token = jwt.sign({_id: user._id}, process.env.Jwt_Sec,{
         expiresIn: "15d",
     });
     res.json({
@@ -94,4 +96,10 @@ export const loginUser = TryCatch(async(req,res) => {
         token ,
         user,
     });
+});
+
+export const myProfile = TryCatch(async(req, res)=>{
+    const user = await User.findById(req.user._id)
+
+    res.json({ user });
 });
